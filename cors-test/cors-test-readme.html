@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CORS Testing Lab — Setup & Instructions</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&display=swap');
+:root{--navy:#0A2E36;--teal:#0D7377;--accent:#45D9B5;--bg:#FAFAF8;--card:#FFFFFF;--text:#2C2C2A;--muted:#6B7B8D;--border:#E2E8F0;--code-bg:#1e1e2e}
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);line-height:1.7}
+.ct{max-width:900px;margin:0 auto;padding:2rem 1.5rem}
+.hero{text-align:center;padding:2.5rem 0 2rem;border-bottom:3px solid var(--teal);margin-bottom:2rem}
+.hero h1{font-family:'Source Serif 4',serif;font-size:2.2rem;color:var(--navy);margin-bottom:.5rem}
+.hero .sub{font-size:1rem;color:var(--muted)}
+h2{font-family:'Source Serif 4',serif;font-size:1.6rem;color:var(--navy);margin:2.5rem 0 1rem;padding-top:1rem;border-top:2px solid var(--border)}
+h2:first-of-type{border-top:none;padding-top:0}
+h3{font-size:1.05rem;color:var(--teal);margin:1.5rem 0 .5rem}
+p{margin-bottom:.8rem}ul,ol{margin:0 0 1rem 1.5rem}li{margin-bottom:.5rem}
+.kb,.tb,.wb,.ob{padding:.8rem 1.1rem;border-radius:8px;margin:1.2rem 0;font-size:.9rem;line-height:1.6}
+.kb{background:#EDE7F6;color:#4A148C;border-left:4px solid #4A148C}
+.tb{background:#E8F5E9;color:#1B5E20;border-left:4px solid #1B5E20}
+.wb{background:#FFF8E1;color:#E65100;border-left:4px solid #E65100}
+.ob{background:#E3F2FD;color:#0D47A1;border-left:4px solid #0D47A1}
+.db{background:#FFEBEE;color:#B71C1C;border-left:4px solid #B71C1C;padding:.8rem 1.1rem;border-radius:8px;margin:1.2rem 0;font-size:.9rem;line-height:1.6}
+.steps{counter-reset:step;margin:1rem 0}
+.step{position:relative;padding:.7rem .8rem .7rem 3.2rem;margin-bottom:.7rem;background:#fff;border:1px solid var(--border);border-radius:8px;font-size:.92rem}
+.step::before{counter-increment:step;content:counter(step);position:absolute;left:.8rem;top:.55rem;width:1.7rem;height:1.7rem;background:var(--teal);color:#fff;border-radius:50%;font-weight:700;font-size:.78rem;display:flex;align-items:center;justify-content:center}
+.cs{margin:1rem 0;border-radius:10px;overflow:hidden;border:1px solid #313244}
+.ch{display:flex;align-items:center;gap:.8rem;padding:.5rem .8rem;background:#181825;color:#a6adc8;font-family:'JetBrains Mono',monospace;font-size:.75rem}
+.cf{background:#313244;padding:.2rem .5rem;border-radius:4px;color:var(--accent);font-weight:500}
+.ct2{flex:1;color:#6c7086}
+.cpb{display:flex;align-items:center;gap:4px;background:none;border:1px solid #45475a;color:#a6adc8;padding:.25rem .6rem;border-radius:5px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:.7rem;transition:all .2s}
+.cpb:hover{background:#313244;color:var(--accent);border-color:var(--accent)}
+.cpb.copied{background:#1B5E20;color:#fff;border-color:#1B5E20}
+pre.cc{margin:0;padding:1rem .8rem;background:var(--code-bg);overflow-x:auto;font-size:.82rem;line-height:1.7;color:#cdd6f4;font-family:'JetBrains Mono',monospace}
+.ft{font-family:'JetBrains Mono',monospace;font-size:.85rem;background:#F5F4F0;padding:1rem 1.5rem;border-radius:8px;border:1px solid var(--border);line-height:1.8;margin:1rem 0}
+.it{width:100%;border-collapse:collapse;margin:1.2rem 0;font-size:.88rem}
+.it th{background:var(--navy);color:#fff;padding:.6rem .7rem;text-align:left;font-weight:600}
+.it td{padding:.5rem .7rem;border-bottom:1px solid var(--border)}
+.it tr:nth-child(even) td{background:#F5F4F0}
+.origins{display:flex;gap:1rem;margin:1rem 0;flex-wrap:wrap}
+.origin{border-radius:10px;padding:1rem;text-align:center;flex:1;min-width:200px;color:#fff;font-size:.9rem}
+.origin strong{display:block;font-size:1rem;margin-bottom:.3rem}
+.origin code{background:rgba(0,0,0,.2);padding:.2rem .5rem;border-radius:4px;font-size:.85rem}
+.vs{display:flex;align-items:center;font-size:1.3rem;font-weight:700;color:#C62828}
+.screenshot{background:#F8FAFC;border:2px dashed var(--border);border-radius:12px;padding:1.5rem;text-align:center;color:var(--muted);margin:1rem 0;font-style:italic;font-size:.9rem}
+</style>
+</head>
+<body>
+<div class="ct">
+
+<div class="hero">
+<h1>🧪 CORS Testing Lab</h1>
+<div class="sub">Prove that CORS works by running the API and client on different ports</div>
+</div>
+
+<!-- ════════ WHAT IS THIS ════════ -->
+<h2>What This Lab Proves</h2>
+<p>In Postman, CORS doesn't exist — Postman is not a browser. To see CORS in action, you need a <strong>browser</strong> making requests from a <strong>different origin</strong>. This lab gives you exactly that:</p>
+
+<div class="origins">
+<div class="origin" style="background:#1565C0">
+<strong>CORS Test Client</strong>
+<code>http://localhost:5500</code>
+<div style="margin-top:.3rem;font-size:.8rem;opacity:.8">A web page with buttons that call your API</div>
+</div>
+<div class="vs">≠</div>
+<div class="origin" style="background:#0D7377">
+<strong>Your Gelos API</strong>
+<code>http://localhost:3000</code>
+<div style="margin-top:.3rem;font-size:.8rem;opacity:.8">Express + MongoDB + CORS (Session 3)</div>
+</div>
+</div>
+
+<div class="db"><strong>DIFFERENT PORTS = DIFFERENT ORIGINS.</strong> <code>http://localhost:5500</code> and <code>http://localhost:3000</code> are different origins because the port numbers differ. The browser will enforce CORS on every request from 5500 → 3000, including pre-flight OPTIONS requests that you can watch in DevTools.</div>
+
+<!-- ════════ FILES ════════ -->
+<h2>Files You Need</h2>
+<table class="it">
+<thead><tr><th>File</th><th>What it does</th><th>Where to put it</th></tr></thead>
+<tbody>
+<tr><td><code>cors-test-client.html</code></td><td>The test page — buttons for every HTTP method, logs CORS headers</td><td>Any folder (e.g., <code>C:\cors-test\</code>)</td></tr>
+<tr><td><code>cors-test-server.js</code></td><td>Tiny Node.js server that serves the HTML on port 5500</td><td>Same folder as the HTML file</td></tr>
+</tbody>
+</table>
+
+<div class="ft">
+cors-test/<br>
+&nbsp;&nbsp;cors-test-client.html &nbsp;&larr; the test page<br>
+&nbsp;&nbsp;cors-test-server.js &nbsp;&nbsp;&larr; serves it on port 5500<br>
+<br>
+gelos-api/ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&larr; your existing API project<br>
+&nbsp;&nbsp;server.js<br>
+&nbsp;&nbsp;models/<br>
+&nbsp;&nbsp;routes/<br>
+&nbsp;&nbsp;middleware/<br>
+&nbsp;&nbsp;...
+</div>
+
+<div class="ob"><strong>NO npm install NEEDED.</strong> The test server uses only built-in Node.js modules (<code>http</code> and <code>fs</code>). No packages to install. Just run it.</div>
+
+<!-- ════════ SETUP ════════ -->
+<h2>Setup — Step by Step</h2>
+
+<h3>Step 1: Start your Gelos API (port 3000)</h3>
+<div class="steps">
+<div class="step">Open <strong>Terminal 1</strong> (Command Prompt, PowerShell, or VS Code terminal).</div>
+<div class="step">Navigate to your gelos-api project folder.</div>
+<div class="step">Start the server:</div>
+</div>
+
+<div class="cs"><div class="ch"><span class="cf">Terminal 1</span><span class="ct2">Start your API</span></div>
+<pre class="cc">cd C:\gelos-api
+npm run dev</pre></div>
+
+<p>You should see:</p>
+<div class="cs"><div class="ch"><span class="cf">Output</span></div>
+<pre class="cc">Server running on http://localhost:3000
+API docs:  http://localhost:3000/api-docs
+Connected to MongoDB</pre></div>
+
+<div class="wb"><strong>KEEP THIS TERMINAL OPEN.</strong> The API must stay running the entire time you're testing.</div>
+
+<h3>Step 2: Start the CORS test client (port 5500)</h3>
+<div class="steps">
+<div class="step">Open <strong>Terminal 2</strong> (a second terminal window — not the same one).</div>
+<div class="step">Navigate to where you saved the CORS test files.</div>
+<div class="step">Run the test server:</div>
+</div>
+
+<div class="cs"><div class="ch"><span class="cf">Terminal 2</span><span class="ct2">Start the CORS test client</span></div>
+<pre class="cc">cd C:\cors-test
+node cors-test-server.js</pre></div>
+
+<p>You should see:</p>
+<div class="cs"><div class="ch"><span class="cf">Output</span></div>
+<pre class="cc">  🧪 CORS Test Client running at:
+     http://localhost:5500
+
+  Your API should be running at:
+     http://localhost:3000
+
+  Different ports = different origins = CORS enforced!</pre></div>
+
+<div class="wb"><strong>KEEP THIS TERMINAL OPEN TOO.</strong> You now have two servers running side by side.</div>
+
+<h3>Step 3: Open the test client in your browser</h3>
+<div class="steps">
+<div class="step">Open Chrome or Firefox.</div>
+<div class="step">Go to: <code>http://localhost:5500</code></div>
+<div class="step">Open <strong>DevTools</strong>: press <code>F12</code> (or right-click → Inspect).</div>
+<div class="step">Click the <strong>Network</strong> tab in DevTools.</div>
+<div class="step">Make sure the Network tab is recording (red dot visible).</div>
+</div>
+
+<div class="tb"><strong>YOU SHOULD NOW SEE:</strong> The CORS Test Client page with origin boxes showing port 5500 and port 3000, login fields, and method buttons. DevTools Network tab is open and ready to capture requests.</div>
+
+<!-- ════════ TESTING ════════ -->
+<h2>Testing — Run Each Scenario</h2>
+
+<h3>Test A: GET all orders (simple request)</h3>
+<div class="steps">
+<div class="step">Click <strong>GET /api/orders</strong>.</div>
+<div class="step"><strong>Watch the Network tab</strong> — you should see the GET request appear.</div>
+<div class="step">Check the log panel — CORS headers should appear in yellow: <code>access-control-allow-origin: *</code></div>
+<div class="step">GET is a "simple request" — the browser may skip pre-flight and just check the response headers.</div>
+</div>
+
+<div class="ob"><strong>WHAT YOU'RE SEEING:</strong> The browser sent a GET from port 5500 to port 3000. Because these are different origins, the browser checks the response for <code>Access-Control-Allow-Origin</code>. Your <code>cors(corsOptions)</code> adds this header automatically. If it weren't there, the browser would block the response.</div>
+
+<div class="screenshot">SCREENSHOT: DevTools Network tab showing GET request with CORS headers</div>
+
+<h3>Test B: GET all orders</h3>
+<div class="steps">
+<div class="step">Click <strong>GET /api/orders</strong>.</div>
+<div class="step">Watch the Network tab — you may see:
+<ul style="margin:.3rem 0 0 1rem">
+<li><code>OPTIONS /api/orders</code> → 204 (pre-flight — because Authorization header is custom)</li>
+<li><code>GET /api/orders</code> → 200 OK</li>
+</ul></div>
+<div class="step">Check the log — CORS headers should appear in yellow: <code>access-control-allow-origin: *</code></div>
+</div>
+
+<h3>Test C: POST new order (create + pre-flight)</h3>
+<div class="steps">
+<div class="step">Click <strong>POST /api/orders</strong>.</div>
+<div class="step">Network tab shows: OPTIONS → 204, then POST → 201 Created.</div>
+<div class="step">Log shows the created order (OrderNo 9998) + CORS headers.</div>
+</div>
+
+<h3>Test D: PUT (replace order)</h3>
+<div class="steps">
+<div class="step">Click <strong>PUT /api/orders/9998</strong>.</div>
+<div class="step">Network tab: OPTIONS → 204, then PUT → 200 OK.</div>
+<div class="step">PUT always triggers pre-flight — it's not a "simple method".</div>
+</div>
+
+<h3>Test E: PATCH (partial update)</h3>
+<div class="steps">
+<div class="step">Click <strong>PATCH /api/orders/1001</strong>.</div>
+<div class="step">Network tab: OPTIONS → 204, then PATCH → 200 OK.</div>
+<div class="step">Only the Product Quantity field is updated (the rest stays the same).</div>
+</div>
+
+<h3>Test F: DELETE</h3>
+<div class="steps">
+<div class="step">Click <strong>DELETE /api/orders/9998</strong>.</div>
+<div class="step">Network tab: OPTIONS → 204, then DELETE → 200 OK.</div>
+<div class="step">The test order #9998 is removed (cleaning up after Test C/D).</div>
+</div>
+
+<h3>Test G: HEAD (metadata only)</h3>
+<div class="steps">
+<div class="step">Click <strong>HEAD /api/orders</strong>.</div>
+<div class="step">Response body is empty — that's correct for HEAD.</div>
+<div class="step">CORS headers should still appear on the response.</div>
+</div>
+
+<!-- ════════ THE KILLER TEST ════════ -->
+<h2>🚫 Test H: Prove CORS is Required (Break It!)</h2>
+<p>This is the most important test — it proves that without <code>cors()</code>, everything breaks.</p>
+
+<div class="steps">
+<div class="step">Open your <code>gelos-api/server.js</code> in VS Code.</div>
+<div class="step">Find this line: <code>app.use(cors(corsOptions));</code></div>
+<div class="step"><strong>Comment it out</strong> by adding <code>//</code> at the start:</div>
+</div>
+
+<div class="cs"><div class="ch"><span class="cf">server.js</span><span class="ct2">Comment out CORS</span></div>
+<pre class="cc">// app.use(cors(corsOptions));   ← add // to disable CORS</pre></div>
+
+<div class="steps">
+<div class="step">Save the file. Nodemon restarts your server automatically.</div>
+<div class="step">Go back to the CORS test client (<code>http://localhost:5500</code>).</div>
+<div class="step">Click <strong>GET /api/orders</strong>.</div>
+<div class="step"><strong>WATCH IT FAIL.</strong> The log will show a red CORS error.</div>
+<div class="step">Open the <strong>Console</strong> tab in DevTools — you'll see the full error:</div>
+</div>
+
+<div class="cs"><div class="ch"><span class="cf">Browser Console</span><span class="ct2">The CORS error</span></div>
+<pre class="cc">Access to fetch at 'http://localhost:3000/api/orders'
+from origin 'http://localhost:5500'
+has been blocked by CORS policy:
+No 'Access-Control-Allow-Origin' header is present
+on the requested resource.</pre></div>
+
+<div class="db"><strong>THIS IS THE PROOF.</strong> Without <code>app.use(cors(corsOptions))</code>, the server doesn't send CORS headers. The browser blocks the response. The data never reaches the client. This is exactly what would happen if a malicious website tried to call your API — the browser protects the user.</div>
+
+<div class="screenshot">SCREENSHOT: Browser console showing CORS error after disabling cors()</div>
+
+<h3>Fix it</h3>
+<div class="steps">
+<div class="step">Go back to <code>server.js</code>.</div>
+<div class="step"><strong>Remove the <code>//</code></strong> to re-enable CORS:</div>
+</div>
+
+<div class="cs"><div class="ch"><span class="cf">server.js</span><span class="ct2">Re-enable CORS</span></div>
+<pre class="cc">app.use(cors(corsOptions));   ← remove // to enable CORS</pre></div>
+
+<div class="steps">
+<div class="step">Save. Nodemon restarts.</div>
+<div class="step">Click <strong>GET /api/orders</strong> again in the test client.</div>
+<div class="step"><strong>It works again.</strong> 200 OK with CORS headers.</div>
+</div>
+
+<div class="tb"><strong>ONE LINE.</strong> That single <code>app.use(cors(corsOptions))</code> is the difference between a working API and a completely blocked one. This is what Session 3 configured.</div>
+
+<!-- ════════ WHAT TO LOOK FOR IN DEVTOOLS ════════ -->
+<h2>What to Look For in DevTools</h2>
+
+<h3>Network tab — pre-flight requests</h3>
+<table class="it">
+<thead><tr><th>What you see</th><th>What it means</th></tr></thead>
+<tbody>
+<tr><td><code>OPTIONS</code> request before <code>POST</code></td><td>Browser sent pre-flight — your API has JSON body + Auth header</td></tr>
+<tr><td>OPTIONS status: <code>204</code></td><td>Pre-flight accepted — server says "yes, that method and those headers are allowed"</td></tr>
+<tr><td>OPTIONS response headers include <code>Access-Control-Allow-Methods</code></td><td>Server lists which methods are permitted</td></tr>
+<tr><td>The actual <code>POST</code> follows the <code>OPTIONS</code></td><td>Browser approved the pre-flight → sent the real request</td></tr>
+<tr><td>Only <code>GET</code> appears (no OPTIONS before it)</td><td>GET is a "simple request" — browser skipped pre-flight (unless Auth header triggers it)</td></tr>
+</tbody>
+</table>
+
+<h3>Network tab — click on the OPTIONS request</h3>
+<p>Click the OPTIONS request in the Network tab. Look at the <strong>Response Headers</strong>:</p>
+<table class="it">
+<thead><tr><th>Header</th><th>Expected value</th><th>Meaning</th></tr></thead>
+<tbody>
+<tr><td><code>Access-Control-Allow-Origin</code></td><td><code>*</code></td><td>Any origin can call this API</td></tr>
+<tr><td><code>Access-Control-Allow-Methods</code></td><td><code>GET,HEAD,PUT,PATCH,POST,DELETE</code></td><td>All these methods are permitted</td></tr>
+<tr><td><code>Access-Control-Allow-Headers</code></td><td><code>Content-Type,Authorization</code></td><td>JSON bodies (and later JWT tokens) are allowed</td></tr>
+</tbody>
+</table>
+
+<h3>Console tab — CORS errors</h3>
+<p>If CORS is broken, the Console tab shows the exact error. Common messages:</p>
+<table class="it">
+<thead><tr><th>Error message</th><th>Cause</th><th>Fix</th></tr></thead>
+<tbody>
+<tr><td>"No 'Access-Control-Allow-Origin' header"</td><td><code>cors()</code> not enabled in server.js</td><td>Add <code>app.use(cors(corsOptions))</code></td></tr>
+<tr><td>"Method PUT not allowed"</td><td>PUT not in your <code>methods</code> array</td><td>Add PUT to corsOptions.methods</td></tr>
+<tr><td>"Header 'Authorization' not allowed"</td><td>Authorization not in <code>allowedHeaders</code></td><td>Add Authorization to corsOptions.allowedHeaders</td></tr>
+<tr><td>"Failed to fetch" (no details)</td><td>Server not running or wrong port</td><td>Check <code>npm run dev</code> is running on port 3000</td></tr>
+</tbody>
+</table>
+
+<!-- ════════ SUMMARY ════════ -->
+<h2>Summary — What This Lab Demonstrates</h2>
+
+<table class="it">
+<thead><tr><th>#</th><th>Test</th><th>What it proves</th></tr></thead>
+<tbody>
+<tr><td>A</td><td>GET all orders</td><td>CORS headers appear on simple GET response from different origin</td></tr>
+<tr><td>B</td><td>GET all orders</td><td>CORS headers appear on simple/GET responses</td></tr>
+<tr><td>C</td><td>POST new order</td><td>Pre-flight + CORS headers on 201 Created response</td></tr>
+<tr><td>D</td><td>PUT replace</td><td>PUT is never "simple" — always triggers pre-flight</td></tr>
+<tr><td>E</td><td>PATCH update</td><td>PATCH is never "simple" — always triggers pre-flight</td></tr>
+<tr><td>F</td><td>DELETE</td><td>DELETE triggers pre-flight + CORS on delete response</td></tr>
+<tr><td>G</td><td>HEAD</td><td>Returns headers only (no body) + CORS headers present</td></tr>
+<tr><td>H</td><td>🚫 Disable CORS</td><td><strong>Everything breaks.</strong> Proves cors() middleware is essential.</td></tr>
+</tbody>
+</table>
+
+<div class="kb"><strong>KEY LEARNING:</strong> In Postman, CORS is invisible — it doesn't exist. This lab makes CORS visible. You can see the pre-flight OPTIONS requests in the Network tab, read the CORS headers on every response, and prove that disabling <code>cors()</code> blocks all cross-origin requests. This is what happens when a real website (like the Gelos dashboard) calls your API from a different origin.</div>
+
+<h2>Cleanup</h2>
+<div class="steps">
+<div class="step">In Terminal 2: press <code>Ctrl+C</code> to stop the CORS test server.</div>
+<div class="step">In Terminal 1: your API keeps running as normal.</div>
+<div class="step">Make sure <code>app.use(cors(corsOptions))</code> is uncommented in server.js.</div>
+</div>
+
+</div>
+</body>
+</html>

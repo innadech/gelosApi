@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CORS Test Client — Port 5500</title>
+<style>
+body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #e0e0e0; padding: 2rem; max-width: 800px; margin: 0 auto; }
+h1 { color: #45D9B5; margin-bottom: .3rem; }
+.sub { color: #888; font-size: .9rem; margin-bottom: 1.5rem; }
+.origins { display: flex; gap: 1rem; margin: 1rem 0; flex-wrap: wrap; }
+.origin-box { background: #2a2a4a; padding: .8rem 1rem; border-radius: 8px; border-left: 3px solid; flex: 1; min-width: 250px; }
+.origin-box.this { border-color: #F59E0B; }
+.origin-box.api { border-color: #45D9B5; }
+.origin-box strong { display: block; margin-bottom: .2rem; }
+.origin-box code { background: #1a1a2e; padding: .2rem .4rem; border-radius: 3px; font-size: .85rem; }
+.diff { color: #EF4444; font-weight: 600; font-size: .9rem; margin: .5rem 0; }
+.btn-row { display: flex; gap: .5rem; flex-wrap: wrap; margin: 1rem 0; }
+button { padding: .6rem 1.2rem; border: none; border-radius: 6px; font-size: .85rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .15s; }
+.btn-get { background: #2E7D32; color: #fff; }
+.btn-post { background: #1565C0; color: #fff; }
+.btn-put { background: #E65100; color: #fff; }
+.btn-patch { background: #6A1B9A; color: #fff; }
+.btn-delete { background: #C62828; color: #fff; }
+.btn-head { background: #607D8B; color: #fff; }
+.btn-opts { background: #0D7377; color: #fff; }
+button:hover { opacity: .85; transform: translateY(-1px); }
+#output { background: #0d0d1a; border: 1px solid #333; border-radius: 8px; padding: 1rem; margin-top: 1rem; font-family: 'Consolas', monospace; font-size: .82rem; min-height: 200px; max-height: 500px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
+.log-info { color: #45D9B5; }
+.log-cors { color: #F59E0B; }
+.log-ok { color: #4CAF50; }
+.log-err { color: #EF4444; }
+.log-dim { color: #555; }
+h3 { color: #45D9B5; margin: 1.5rem 0 .5rem; font-size: 1rem; }
+.instructions { background: #2a2a4a; border-radius: 8px; padding: 1rem; margin: 1rem 0; font-size: .85rem; line-height: 1.6; }
+.note { background: #2a2a1a; border-left: 3px solid #F59E0B; padding: .6rem .8rem; border-radius: 0 6px 6px 0; font-size: .82rem; margin: 1rem 0; color: #F59E0B; }
+</style>
+</head>
+<body>
+
+<h1>🧪 CORS Test Client</h1>
+<div class="sub">This page runs on port 5500 — a different origin from your API on port 3000</div>
+
+<div class="origins">
+<div class="origin-box this">
+<strong>This page (client)</strong>
+<code>http://localhost:5500</code>
+</div>
+<div class="origin-box api">
+<strong>Your API (server)</strong>
+<code>http://localhost:3000</code>
+</div>
+</div>
+<div class="diff">⚠️ Different ports = different origins = CORS is enforced by the browser</div>
+
+<div class="note">📌 This test client works with Session 3 (CORS only) — no JWT login required. Your routes are unprotected at this stage. All endpoints are open.</div>
+
+<div class="instructions">
+<strong>How to use:</strong> Open DevTools (F12) → <strong>Network tab</strong>. Click any button below. Watch the <strong>OPTIONS pre-flight</strong> appear before POST/PUT/PATCH/DELETE. The Console tab shows CORS errors if your server isn't configured.
+</div>
+
+<h3>Test 1: Simple requests (no pre-flight expected)</h3>
+<div class="btn-row">
+<button class="btn-get" onclick="testSimple('GET', '/api/orders')">GET /api/orders</button>
+<button class="btn-get" onclick="testSimple('GET', '/api/orders/1001')">GET /api/orders/1001</button>
+<button class="btn-head" onclick="testHEAD()">HEAD /api/orders</button>
+</div>
+
+<h3>Test 2: Requests that trigger pre-flight (watch Network tab!)</h3>
+<div class="btn-row">
+<button class="btn-post" onclick="testPOST()">POST (create order #9998)</button>
+<button class="btn-put" onclick="testPUT()">PUT (replace #9998)</button>
+<button class="btn-patch" onclick="testPATCH()">PATCH (update #1001 qty)</button>
+<button class="btn-delete" onclick="testSimple('DELETE', '/api/orders/9998')">DELETE #9998</button>
+</div>
+
+<h3>Test 3: Manual pre-flight simulation</h3>
+<div class="btn-row">
+<button class="btn-opts" onclick="testOPTIONS('POST')">OPTIONS for POST</button>
+<button class="btn-opts" onclick="testOPTIONS('PUT')">OPTIONS for PUT</button>
+<button class="btn-opts" onclick="testOPTIONS('DELETE')">OPTIONS for DELETE</button>
+</div>
+
+<h3>Test 4: Break it!</h3>
+<div class="btn-row">
+<button style="background:#333;color:#EF4444;border:1px solid #EF4444" onclick="testBreak()">🚫 Test without CORS (read log for instructions)</button>
+</div>
+
+<button style="background:#333;color:#888;margin-top:1rem" onclick="document.getElementById('output').innerHTML=''">Clear log</button>
+
+<div id="output"></div>
+
+<script>
+const API = "http://localhost:3000";
+
+function log(msg, cls = '') {
+  const o = document.getElementById('output');
+  o.innerHTML += `<span class="${cls}">${msg}</span>\n`;
+  o.scrollTop = o.scrollHeight;
+}
+function logSep(title) {
+  log(`\n${'═'.repeat(60)}`, 'log-dim');
+  log(`  ${title}`, 'log-info');
+  log(`${'═'.repeat(60)}`, 'log-dim');
+}
+function logCORS(headers) {
+  const names = ['access-control-allow-origin','access-control-allow-methods','access-control-allow-headers'];
+  let found = false;
+  names.forEach(n => { const v = headers.get(n); if (v) { log(`  ✓ ${n}: ${v}`, 'log-cors'); found = true; } });
+  if (!found) log('  ⚠️ No CORS headers found!', 'log-err');
+  const ct = headers.get('content-type');
+  if (ct) log(`  content-type: ${ct}`, 'log-dim');
+}
+
+async function testSimple(method, path) {
+  logSep(`${method} ${path}`);
+  log(`  Sending ${method} from port 5500 → port 3000...`, 'log-dim');
+  if (method === 'DELETE') log('  ⚡ DELETE triggers pre-flight — watch Network tab for OPTIONS!', 'log-cors');
+  try {
+    const res = await fetch(`${API}${path}`, { method });
+    log(`\n  Status: ${res.status} ${res.statusText}`, res.ok ? 'log-ok' : 'log-err');
+    log('  CORS headers on response:', 'log-cors');
+    logCORS(res.headers);
+    const data = await res.json();
+    const p = JSON.stringify(data).substring(0, 200);
+    log(`\n  Body: ${p}${p.length >= 200 ? '...' : ''}`, 'log-dim');
+  } catch (err) {
+    log(`\n  ❌ CORS ERROR: ${err.message}`, 'log-err');
+    log('  → Check: is app.use(cors(corsOptions)) in server.js?', 'log-err');
+  }
+}
+
+async function testHEAD() {
+  logSep('HEAD /api/orders (headers only, no body)');
+  try {
+    const res = await fetch(`${API}/api/orders`, { method: 'HEAD' });
+    log(`\n  Status: ${res.status} ${res.statusText}`, res.ok ? 'log-ok' : 'log-err');
+    log('  CORS headers:', 'log-cors');
+    logCORS(res.headers);
+    log('\n  Body: (empty — correct for HEAD)', 'log-dim');
+  } catch (err) {
+    log(`\n  ❌ CORS ERROR: ${err.message}`, 'log-err');
+  }
+}
+
+async function testPOST() {
+  logSep('POST /api/orders (create test order #9998)');
+  log('  POST with Content-Type: application/json triggers pre-flight', 'log-cors');
+  log('  ⚡ Watch Network tab — OPTIONS appears before POST', 'log-cors');
+  try {
+    const res = await fetch(`${API}/api/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        "OrderNo": 9998, "Order Date": "07/05/2026", "CustNo": 5555555555,
+        "Product Code": 1, "Product Name": "CORS Test Product",
+        "Product Quantity": 1, "Product Price": 1, "Total": 1, "ModeOf Payment": "Cash"
+      })
+    });
+    log(`\n  Status: ${res.status} ${res.statusText}`, res.ok ? 'log-ok' : 'log-err');
+    log('  CORS headers:', 'log-cors');
+    logCORS(res.headers);
+    const data = await res.json();
+    log(`\n  Body: ${JSON.stringify(data).substring(0, 200)}`, 'log-dim');
+    if (res.ok) log('\n  ✅ Created! Now test PUT, PATCH, then DELETE to clean up.', 'log-ok');
+  } catch (err) {
+    log(`\n  ❌ CORS ERROR: ${err.message}`, 'log-err');
+  }
+}
+
+async function testPUT() {
+  logSep('PUT /api/orders/9998 (replace test order)');
+  log('  PUT always triggers pre-flight', 'log-cors');
+  try {
+    const res = await fetch(`${API}/api/orders/9998`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        "OrderNo": 9998, "Order Date": "07/05/2026", "CustNo": 5555555555,
+        "Product Code": 1, "Product Name": "CORS Updated Product",
+        "Product Quantity": 99, "Product Price": 99, "Total": 9801, "ModeOf Payment": "Online"
+      })
+    });
+    log(`\n  Status: ${res.status} ${res.statusText}`, res.ok ? 'log-ok' : 'log-err');
+    log('  CORS headers:', 'log-cors');
+    logCORS(res.headers);
+    const data = await res.json();
+    log(`\n  Body: ${JSON.stringify(data).substring(0, 200)}`, 'log-dim');
+  } catch (err) {
+    log(`\n  ❌ CORS ERROR: ${err.message}`, 'log-err');
+  }
+}
+
+async function testPATCH() {
+  logSep('PATCH /api/orders/1001 (update quantity only)');
+  log('  PATCH always triggers pre-flight', 'log-cors');
+  try {
+    const res = await fetch(`${API}/api/orders/1001`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ "Product Quantity": 999 })
+    });
+    log(`\n  Status: ${res.status} ${res.statusText}`, res.ok ? 'log-ok' : 'log-err');
+    log('  CORS headers:', 'log-cors');
+    logCORS(res.headers);
+    const data = await res.json();
+    log(`\n  Body: ${JSON.stringify(data).substring(0, 200)}`, 'log-dim');
+  } catch (err) {
+    log(`\n  ❌ CORS ERROR: ${err.message}`, 'log-err');
+  }
+}
+
+async function testOPTIONS(method) {
+  logSep(`OPTIONS /api/orders (pre-flight for ${method})`);
+  log(`  Manually asking: "Can I ${method} with JSON from this origin?"`, 'log-cors');
+  try {
+    const res = await fetch(`${API}/api/orders`, {
+      method: 'OPTIONS',
+      headers: {
+        'Origin': 'http://localhost:5500',
+        'Access-Control-Request-Method': method,
+        'Access-Control-Request-Headers': 'Content-Type'
+      }
+    });
+    log(`\n  Status: ${res.status} ${res.statusText}`, res.ok ? 'log-ok' : 'log-err');
+    log('  Server responded with:', 'log-cors');
+    logCORS(res.headers);
+    if (res.status === 204) log(`\n  ✅ Pre-flight approved! Browser would send the actual ${method}`, 'log-ok');
+  } catch (err) {
+    log(`\n  ❌ ERROR: ${err.message}`, 'log-err');
+  }
+}
+
+async function testBreak() {
+  logSep('🚫 TESTING WITHOUT CORS');
+  log('  To see CORS fail:', 'log-err');
+  log('  1. Open gelos-api/server.js', 'log-err');
+  log('  2. Find:    app.use(cors(corsOptions));', 'log-err');
+  log('  3. Add //   // app.use(cors(corsOptions));', 'log-err');
+  log('  4. Save — nodemon restarts', 'log-err');
+  log('  5. Click GET /api/orders above', 'log-err');
+  log('  6. WATCH IT FAIL', 'log-err');
+  log('  7. Open Console tab (F12) for full error', 'log-err');
+  log('  8. Remove // and save to fix', 'log-err');
+  log('', '');
+  log('  Sending test GET now...', 'log-dim');
+  try {
+    const res = await fetch(`${API}/api/orders`);
+    log(`\n  Status: ${res.status}`, res.ok ? 'log-ok' : 'log-err');
+    logCORS(res.headers);
+    if (res.ok) log('\n  ⚠️ Still working — comment out cors() first!', 'log-cors');
+  } catch (err) {
+    log(`\n  ❌ ${err.message}`, 'log-err');
+    log('  ✅ THIS PROVES cors() IS NEEDED!', 'log-ok');
+  }
+}
+
+log('CORS Test Client loaded', 'log-info');
+log(`This page:  ${window.location.origin}`, 'log-cors');
+log(`Your API:   ${API}`, 'log-cors');
+log(`Different origins = CORS enforced\n`, 'log-dim');
+log('No login needed — routes are unprotected at Session 3.', 'log-dim');
+log('Open DevTools (F12) → Network tab, then click buttons.\n', 'log-dim');
+</script>
+</body>
+</html>
