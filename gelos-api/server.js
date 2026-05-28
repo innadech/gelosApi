@@ -13,23 +13,21 @@ require('dotenv').config()
 
 // NEW: Import auth middleware and auth routes
 const authenticateToken = require('./middleware/auth')
-const authRoutes = require('./routes/auth')
-const orderRoutes = require('./routes/orders')
+const authRoutes = require('./routes/authRoutes.js')
+const orderRoutes = require('./routes/orderRoutes.js')
 
 const app = express()
 
-// Middleware
-app.use(express.json())
-
 // CORS (from Session 3)
-const corsOptions = {
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  preflightContinue: false,
-  optionsSuccessStatus: 204,
-}
-app.use(cors(corsOptions))
+// const corsOptions = {
+//   origin: '*',
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization'],
+//   preflightContinue: false,
+//   optionsSuccessStatus: 204,
+// }
+app.use(cors())
+app.use(express.json())
 
 // Connect to MongoDB
 mongoose
@@ -53,7 +51,8 @@ app.use('/api/auth', authRoutes)
 //   2. Run authenticateToken (checks JWT)
 //   3. If token valid → run orderRoutes handlers
 //   4. If token invalid → authenticateToken sends 401/403, never reaches orderRoutes
-app.use('/api/orders', authenticateToken, orderRoutes)
+//authenticateToken,
+app.use('/api/orders', orderRoutes)
 
 // Start server
 const PORT = process.env.PORT || 3000
