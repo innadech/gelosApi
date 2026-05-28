@@ -10,6 +10,8 @@ const express = require('express')
 const mongoose = require('mongoose')
 const cors = require('cors')
 require('dotenv').config()
+const swaggerUi = require('swagger-ui-express')
+const swaggerSpec = require('./swagger.js')
 
 // NEW: Import auth middleware and auth routes
 const authenticateToken = require('./middleware/auth')
@@ -19,15 +21,16 @@ const orderRoutes = require('./routes/orderRoutes.js')
 const app = express()
 
 // CORS (from Session 3)
-// const corsOptions = {
-//   origin: '*',
-//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-//   allowedHeaders: ['Content-Type', 'Authorization'],
-//   preflightContinue: false,
-//   optionsSuccessStatus: 204,
-// }
-app.use(cors())
-app.use(express.json())
+const corsOptions = {
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
+}
+
+app.use(cors(corsOptions))
+app.use(express.json(corsOptions))
 
 // Connect to MongoDB
 mongoose
@@ -53,6 +56,8 @@ app.use('/api/auth', authRoutes)
 //   4. If token invalid → authenticateToken sends 401/403, never reaches orderRoutes
 //authenticateToken,
 app.use('/api/orders', orderRoutes)
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec))
 
 // Start server
 const PORT = process.env.PORT || 3000
