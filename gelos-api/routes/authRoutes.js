@@ -1,69 +1,77 @@
 // ============================================================
-// routes/auth.js — Session 5: Login endpoint with Swagger annotation
+// routes/auth.js — Session 6: Production Login
 // ============================================================
-// This file ISSUES tokens (vs. middleware/auth.js which VERIFIES them).
-// In Session 4 you wrote the route handler. In Session 5 we add the
-// JSDoc @swagger comment so it appears in the /api-docs page.
+// WHAT CHANGED FROM SESSION 4:
+//   Session 4: Hardcoded username/password check
+//   Session 6: Checks credentials against the Employees collection
+//
+// HOW IT WORKS:
+//   1. Client sends { username, password }
+//   2. We search the Employees collection for that username
+//   3. If found AND password matches → generate JWT
+//   4. If not found or wrong password → 401 error
 
 const express = require('express')
 const router = express.Router()
 const jwt = require('jsonwebtoken')
+const Employee = require('../models/Employee')
 
 /**
  * @swagger
  * /api/auth/login:
  *   post:
- *     summary: Login to get a JWT token
- *     description: Send username and password to receive a bearer token.
- *       Copy the returned token and paste it into the green "Authorize"
- *       button at the top of this docs page to unlock protected endpoints.
+ *     summary: Login with employee credentials
+ *     description: Authenticates against the Employees collection and returns a JWT token
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - username
- *               - password
  *             properties:
  *               username:
  *                 type: string
- *                 example: "admin"
+ *                 example: "Jam21"
  *               password:
  *                 type: string
- *                 example: "Gelos2026!"
+ *                 example: "Axgp231@!"
  *     responses:
  *       200:
  *         description: Token returned
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 token:
- *                   type: string
- *                   example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
  *       401:
  *         description: Invalid credentials
  */
-router.post('/login', (req, res) => {
+router.post('/login', async (req, res) => {
   const { username, password } = req.body
 
-  // --- Step 1: Check the credentials ---
-  // (Hardcoded for the tutorial; Session 6 replaces this with a DB lookup.)
-  if (username === 'admin' && password === 'Gelos2026!') {
-    // --- Step 2: Sign the token ---
-    // The password was used to verify the user, then discarded.
-    // It is NEVER placed inside the JWT payload.
+  try {
+    // --- Step 1: Find employee by username ---
+    // We search the Employees collection for a matching Username field
+    const employee = await Employee.findOne({ Username: username })
+
+    // --- Step 2: Validate ---
+    // If no employee found, or password doesn't match → reject
+    if (!employee || employee.Password !== password) {
+      return res.status(401).json({ error: 'Invalid credentials' })
+    }
+
+    // --- Step 3: Generate JWT with employee info ---
     const token = jwt.sign(
-      { username: username, role: 'manager' },
+      {
+        empId: employee.Empid,
+        username: employee.Username,
+      },
       process.env.JWT_SECRET,
       { expiresIn: '1h' },
     )
-    res.json({ token: token })
-  } else {
-    res.status(401).json({ error: 'Invalid credentials' })
+
+    // --- Step 4: Send token ---
+    res.json({
+      message: `Welcome ${employee.Username}`,
+      token: token,
+    })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
   }
 })
 
